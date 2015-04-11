@@ -1,0 +1,26 @@
+CS152 Lab 6, Winter 2015
+
+Lab 6 was graded mostly by an automated process, with a quick review
+of each submission by either Matthew or Adam. We ran tests on your
+implementations, and if tests didn't pass -- commonly because of some
+divergence from the file format as specified -- no credit was awarded
+for those. Please pardon the terseness of the feedback.
+
+This file was automatically generated for Gaibo Zhang (gaibo).
+
+// Makefile             10/10
+// basic test           10/10
+// writes to named file 10/10
+// correct huff table    0/ 5
+// msg len after table   5/ 5
+// exact file format    10/10
+// test ab              10/10
+// test abc             10/10
+// test ABC             10/10
+// test alphabet        0/10
+// test senselessness   10/10
+
+// _total-score_        85/100
+
+remarks: Sometimes writes the wrong size of char table.
+

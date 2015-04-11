@@ -1,0 +1,392 @@
+===== hw2.h =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 2 */
+
+
+/**** Problem 1 ****/
+
+/* sum_cubes : [unsigned int] -> [unsigned int] */
+/* return the sum of the first n cubes */
+unsigned int sum_cubes(unsigned int n);
+
+
+/**** Problem 2 ****/
+
+/* between_space_maker : [unsigned int] [unsigned int] -> [void] */
+/* [AUX] create the space between rungs on a ladder given width
+ * and the length between rungs */
+void between_space_maker(unsigned int width, unsigned int between);
+
+/* rung_maker : [unsigned int] -> [void] */
+/* [AUX] create the rungs on a ladder given a width */
+void rung_maker(unsigned int width);
+
+/* ladder : [unsigned int] [unsigned int] [unsigned int] -> [void] */
+/* create a ladder given # of rungs, width, and length between rungs */
+void ladder(unsigned int rungs, unsigned int width, unsigned int between);
+
+
+/**** Problem 3 ****/
+
+/* stairs : [unsigned int] [unsigned int] [unsigned int] -> [void] */
+/* create stairs given # of steps, extension length of each stair (depth),
+ * and amount of rise per step (riser) */
+void stairs(unsigned int steps, unsigned int depth, unsigned int riser);
+
+
+/**** Problem 4 ****/
+
+/* base_to_int : [int] [int*] [int] -> [int] */
+/* return a number in base 10 given the number of digits, an array containing
+ * the digits from least valuable to greatest, and the base */
+int base_to_int(int ndigits, int* digits, int base);
+===== hw2.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS 152, Winter 2015 */
+/* Homework 2 */
+
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+#include "hw2.h"
+
+
+/**** Problem 1 ****/
+
+unsigned int sum_cubes(unsigned int n) {
+    unsigned int acc = 0;
+    unsigned int i;
+    for (i = 1; i <= n; i++) {
+        acc += i*i*i;
+    }
+    return acc;
+}
+
+
+/**** Problem 2 ****/
+
+void between_space_maker(unsigned int width, unsigned int between) {
+    unsigned int i_between;
+    unsigned int i_width;
+    for (i_between = 1; i_between <= between; i_between++) {
+        printf("*");
+        for (i_width = 1; i_width <= width; i_width++) {
+            printf(" ");
+        }
+        printf("*\n");
+    }
+}
+
+void rung_maker(unsigned int width) {
+    unsigned int i_width;
+    printf("*");
+    for (i_width = 1; i_width <= width; i_width++) {
+        printf("*");
+    }
+    printf("*\n");
+}
+
+void ladder(unsigned int rungs, unsigned int width, unsigned int between) {
+    // error/special case handling
+    if ((width == 0) || (between == 0)) {
+        fprintf(stderr, "width and between must be positive");
+        exit(1);
+    }
+    if (rungs == 0) {
+        printf("\n"); /* #grader: newline is not the same as no picture */
+        exit(0); /* #grader: you don't need to exit here, it's not an error case */
+    }
+    
+    unsigned int i_rungs;
+    // creating the top of the ladder
+    between_space_maker(width, between);
+    // creating the rest of the ladder with rungs and space
+    for (i_rungs = 1; i_rungs <= rungs; i_rungs++) {
+        rung_maker(width);
+        between_space_maker(width, between);
+    }
+}
+
+
+/**** Problem 3 ****/
+
+void stairs(unsigned int steps, unsigned int depth, unsigned int riser) {
+    // error/special case handling
+    if ((depth == 0) || (riser == 0)) {
+        fprintf(stderr, "depth and riser must be positive");
+        exit(1);
+    }
+    if (steps == 0) {
+        printf("\n");
+        exit(0);
+    }
+    
+    unsigned int i_steps;
+    unsigned int i_riser;
+    unsigned int i_depth;
+    unsigned int i_stars;
+    unsigned int i_periods;
+    // loop for making the macro steps
+    for (i_steps = 1; i_steps <= steps; i_steps++) {
+        // loop for making thickness of the macro steps
+        for (i_riser = 1; i_riser <= riser; i_riser++) {
+            // loop for making the varying lengths of stars
+            for (i_stars = i_steps; i_stars >= 2; i_stars--) {
+                // loop for making the basic unit of the stars
+                for (i_depth = 1; i_depth <= depth; i_depth++) {
+                    printf("*");
+                }
+            }
+            // loop for making the varying lengths of periods
+            for (i_periods = i_steps; i_periods <= steps; i_periods++) {
+                // loop for making the basic unit of the periods
+                for (i_depth = 1; i_depth <= depth; i_depth++) {
+                    printf(".");
+                }
+            }
+            printf("\n");
+        }
+    }
+}
+
+
+/**** Problem 4 ****/
+
+int base_to_int(int ndigits, int* digits, int base) {
+    int acc = 0;
+    int counter;
+    for (counter = 0; counter < ndigits; counter++) {
+        acc += digits[counter] * pow(base, counter);
+    }
+    return acc;
+}
+
+/* #grader */
+/* Need to account for the cases where digit >= base (error) */
+
+===== hw2_evidence.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 2 */
+
+
+#include <stdio.h>
+#include "hw2.h"
+
+
+/**** Problem 1 ****/
+
+void evidence_sum_cubes(void) {
+    printf("*** testing sum_cubes\n");
+    printf("sum_cubes(4) - expecting 100: %u\n", sum_cubes(4));
+    printf("sum_cubes(1) - expecting 1: %u\n", sum_cubes(1));
+    printf("sum_cubes(0) - expecting 0: %u\n", sum_cubes(0));
+}
+
+
+/**** Problem 2 ****/
+
+void evidence_between_space_maker(void) {
+    printf("*** testing between_space_maker\n");
+    printf("between_space_maker(3, 2)\n");
+    between_space_maker(3, 2);
+    printf("between_space_maker(4, 4)\n");
+    between_space_maker(4, 4);
+}
+
+void evidence_rung_maker(void) {
+    printf("*** testing rung_maker\n");
+    printf("rung_maker(3)\n");
+    rung_maker(3);
+    printf("rung_maker(4)\n");
+    rung_maker(4);
+}
+
+void evidence_ladder(void) {
+    printf("*** testing ladder\n");
+    printf("ladder(5, 3, 2)\n");
+    ladder(5, 3, 2);
+    printf("ladder(4, 4, 4)\n");
+    ladder(4, 4, 4);
+    printf("ladder(0, 4, 4)\n");
+    ladder(0, 4, 4);
+}
+
+
+/**** Problem 3 ****/
+
+void evidence_stairs(void) {
+    printf("*** testing stairs\n");
+    printf("stairs(5, 3, 2)\n");
+    stairs(5, 3, 2);
+    printf("stairs(4, 4, 4)\n");
+    stairs(4, 4, 4);
+    printf("stairs(0, 4, 4)\n");
+    stairs(0, 4, 4);
+}
+
+
+/**** Problem 4 ****/
+
+void evidence_base_to_int(void) {
+    printf("*** testing base_to_int\n");
+    int digits1[] = {2, 3, 4, 5};
+    int digits2[] = {5, 6, 7};
+    printf("base_to_int(4, digits1, 10) - expecting 5432: %d\n",
+        base_to_int(4, digits1, 10));
+    printf("base_to_int(3, digits2, 8) - expecting 501: %d\n",
+        base_to_int(3, digits2, 8));
+}
+
+
+/*****************************************************************************/
+
+
+int main()
+{
+    evidence_sum_cubes();
+    printf("\n");
+    evidence_between_space_maker();
+    printf("\n");
+    evidence_rung_maker();
+    printf("\n");
+    evidence_ladder();
+    printf("\n");
+    evidence_stairs();
+    printf("\n");
+    evidence_base_to_int();
+    return 0;
+}
+===== sumcubes.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 2 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "hw2.h"
+
+int main(int argc, char *argv[])
+{
+    unsigned int n = atoi(argv[1]);
+    printf("%u\n", sum_cubes(n));
+    return 0;
+}
+===== ladder.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 2 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "hw2.h"
+
+int main(int argc, char *argv[])
+{
+    unsigned int rungs = atoi(argv[1]);
+    unsigned int width = atoi(argv[2]);
+    unsigned int between = atoi(argv[3]);
+    ladder(rungs, width, between);
+    return 0;
+}
+===== stairs.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 2 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "hw2.h"
+
+int main(int argc, char *argv[])
+{
+    unsigned int steps = atoi(argv[1]);
+    unsigned int depth = atoi(argv[2]);
+    unsigned int riser = atoi(argv[3]);
+    stairs(steps, depth, riser);
+    return 0;
+}
+===== basetodecimal.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 2 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "hw2.h"
+
+int main(int argc, char *argv[])
+{
+    int base = atoi(argv[1]);
+    int ndigits = atoi(argv[2]);
+    int* digits = malloc(ndigits * sizeof(int));
+    printf("enter the digits separated by spaces\n" \
+        "(most-significant to least-significant)\n");
+    int counter;
+    for (counter = ndigits-1; counter >= 0; counter--) {
+        scanf("%d", &digits[counter]);
+    }
+    printf("%d\n", base_to_int(ndigits, digits, base));
+    free(digits);
+    return 0;
+}
+===== Makefile =====
+
+all: evidence sumcubes ladder stairs basetodecimal
+
+evidence: hw2.c hw2_evidence.c
+	gcc -Wall -o hw2_evidence hw2.c hw2_evidence.c -lm
+
+sumcubes: hw2.c sumcubes.c
+	gcc -Wall -o sumcubes hw2.c sumcubes.c -lm
+
+ladder: hw2.c ladder.c
+	gcc -Wall -o ladder hw2.c ladder.c -lm
+
+stairs: hw2.c stairs.c
+	gcc -Wall -o stairs hw2.c stairs.c -lm
+
+basetodecimal: hw2.c basetodecimal.c
+	gcc -Wall -o basetodecimal hw2.c basetodecimal.c -lm
+
+clean:
+	rm hw2_evidence sumcubes ladder stairs basetodecimal
+
+
+/* ====== evaluation ====== */
+
+/* === correctness === */
+
+/* problem 1 (sum_cubes)               6/ 6 */
+/* problem 2 (ladder)                  9/10 */
+/* problem 3 (stairs)                  9/10 */
+/* problem 4 (base_to_int)             15/16 */
+
+/* === style === */
+
+/* code layout                         6/ 6 */
+/* identifiers are well named          6/ 6 */
+/* well-written purposes               4/ 4 */
+/* prototypes with appropriate types   4/ 4 */
+
+/* functions are well designed         6/ 6 */
+/* code is well factored               6/ 6 */
+
+/* code is written clearly             8/ 8 */
+/* code is efficient                   6/ 6 */
+
+/* adequate tests                      8/ 8 */
+/* svn used correctly                  4/ 4 */
+
+/* _total-score_                      97/100 */
+
+/* graded by Alice Zhang */

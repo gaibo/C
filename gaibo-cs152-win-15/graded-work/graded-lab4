@@ -1,0 +1,228 @@
+/* ====== Makefile ====== */
+
+# Makefile for CS152 2015 Lab 4
+
+.PHONY: clean
+
+adrbook: adrbook.h bst.c vcard.c main.c
+	gcc -g -o adrbook -Wall vcard.c bst.c main.c -lm
+
+# type 'make clean' to remove the executable and debug information
+clean:
+	rm -rf adrbook *.dSYM
+
+
+/* ====== vcard.c ====== */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include "adrbook.h"
+
+vcard *vcard_new(char *cnet, char *email, char *fname, char *lname, char *tel)
+{
+    vcard* vcard_out = malloc(sizeof(vcard));
+    vcard_out->cnet = strdup(cnet);
+    vcard_out->email = strdup(email);
+    vcard_out->fname = strdup(fname);
+    vcard_out->lname = strdup(lname);
+    vcard_out->tel = strdup(tel);
+    return vcard_out;
+}
+
+void vcard_free(vcard *c)
+{
+  free(c->cnet);
+  free(c->email);
+  free(c->fname);
+  free(c->lname);
+  free(c->tel);
+  free(c);
+  return;
+}
+
+void vcard_show(vcard *c)
+{
+  printf("%s, %s, %s, %s, %s\n", c->cnet, c->email, c->fname, c->lname, c->tel);
+  return;
+}
+/* ====== bst.c ====== */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include "adrbook.h"
+
+bst *bst_singleton(vcard *c)
+{
+  bst* bst_out = malloc(sizeof(bst));
+  bst_out->c = c;
+  bst_out->lsub = NULL;
+  bst_out->rsub = NULL;
+  return bst_out;
+}
+
+int bst_insert(bst *t, vcard *c)
+{
+    // return error if empty tree is given
+    if (t == NULL) {
+        fprintf(stderr, "error: empty tree in bst_insert\n");
+        exit(1);
+    }
+    
+    return bst_insert_helper(t, c); // cue the recursion
+}
+
+int bst_insert_helper(bst* t, vcard* c) {
+    // base case: insertion
+    if (t == NULL) {
+        t = bst_singleton(c);	/* grader: lose the connection between this node and its parent node. */
+        return 1;
+    }
+    
+    // short-circuit if cnet is already there
+    if (!strcmp(c->cnet, t->c->cnet)) {
+        return 0;
+    }
+    
+    // recursive step
+    if (strcmp(c->cnet, t->c->cnet) < 0) {
+        return bst_insert_helper(t->lsub, c);	/* grader: if (t->lsub == NULL) then (...) else .... */
+    } else if (strcmp(c->cnet, t->c->cnet) > 0) {
+        return bst_insert_helper(t->rsub, c);
+    }
+    
+    return 0;
+}
+
+unsigned int bst_num_entries(bst *t)
+{
+    // base case: leaf node (singleton tree)
+    if (t->lsub == NULL && t->rsub == NULL) {
+        return 1;
+    }
+    
+    // recursive step
+    return 1 + bst_num_entries(t->lsub) + bst_num_entries(t->rsub);
+}
+
+unsigned int my_max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+unsigned int bst_height(bst *t)
+{
+    // base case: empty tree
+    if (t == NULL) {
+        return 0;
+    }
+    
+    // recursive step
+    return 1 + my_max(bst_height(t->lsub), bst_height(t->rsub));
+}
+
+vcard *bst_search(bst *t, char *cnet, int *n_comparisons)
+{
+    *n_comparisons = 0;
+    return bst_search_helper(t, cnet, n_comparisons);
+}
+
+/* grader: no need to create a new func. Combine bst_search_helper with bst_search. */
+
+vcard* bst_search_helper(bst *t, char *cnet, int *n_comparisons) {
+    // stopping case: empty tree (no matches at all)
+    if (t == NULL) {
+        return NULL;
+    }
+    
+    // if that didn't short-circuit, a comparison will be made
+    (*n_comparisons)++;
+    
+    // stopping case: cnet match
+    if (!strcmp(cnet, t->c->cnet)) {
+        return t->c;
+    }
+    
+    // recursive step
+    if (strcmp(cnet, t->c->cnet) < 0) {
+        return bst_search_helper(t->lsub, cnet, n_comparisons);
+    } else if (strcmp(cnet, t->c->cnet) > 0) {
+        return bst_search_helper(t->rsub, cnet, n_comparisons);
+    }
+    
+    return 0;
+}
+
+unsigned int bst_c(bst *t, char c)
+{
+    // base case: empty tree (end of the search)
+    if (t == NULL) {
+        return 0;
+    }
+    
+    // recursive case 1: match found
+    // must go down both branches
+    if (c == t->c->cnet[0]) {
+        printf("%s\n", t->c->cnet);
+        return 1 + bst_c(t->lsub, c) + bst_c(t->rsub, c);
+    }
+    
+    // recursive case 2: no match
+    // go down the correct branch
+    if (c < t->c->cnet[0]) {
+        return bst_c(t->lsub, c);
+    } else if (c > t->c->cnet[0]) {
+        return bst_c(t->rsub, c);
+    }
+    
+    return 0;
+}
+
+void bst_free(bst *t)
+{
+    if (t == NULL) {
+        return;
+    }
+    
+    bst_free(t->lsub);
+    bst_free(t->rsub);
+    
+    // once the leaves are reached, start freeing
+    vcard_free(t->c);
+    free(t);
+    return;
+}
+
+
+/* ====== evaluation ======  */
+
+/* --- vcards --- */
+/* - vcard_new           6/ 6 */
+/* - vcard_show          4/ 4 */
+/* - vcard_free          3/ 3 */
+
+/* --- bsts --- */
+/* - bst_singleton       4/ 4 */
+/* - bst_insert          1/ 6 */	/* grader: lose the connection between parent and child nodes. Thus cannot build tree sucessful. */
+/* - bst_num_entries     4/ 4 */
+/* - bst_height          4/ 4 */
+/* - bst_search          6/ 6 */
+/* - bst_c               6/ 6 */
+/* - bst_free            3/ 3 */
+
+/* Makefile              4/ 4 */
+
+/* === style === */
+
+/* code layout                         8/ 8 */
+/* identifiers are well named          8/ 8 */
+
+/* functions are well designed         8/ 8 */
+/* code is well factored               8/ 8 */
+
+/* code is written clearly             8/ 8 */
+/* code is efficient                   8/ 8 */
+
+/* svn used correctly                  2/ 2 */
+
+/* _total-score_                      95/100 */
+
+/* graded by Haopeng Liu */

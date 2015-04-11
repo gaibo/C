@@ -1,0 +1,923 @@
+===== ss.h =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 6 */
+
+#ifndef _SS_H
+#define _SS_H
+
+typedef struct squeezed_string squeezed_string;
+struct squeezed_string {
+    unsigned char* array;
+    unsigned int alen;  // elements in array
+    unsigned int clen;  // characters in string represented
+};
+
+/* squeezed_string* [unsigned int] char -> void */
+/* write an encoded 5-bit character into a squeezed_string */
+void ss_write(squeezed_string* ss, unsigned int i, char c);
+
+/* squeezed_string* [unsigned int] -> char */
+/* read a char from a squeezed_string */
+char ss_read(squeezed_string* ss, unsigned int i);
+
+/* char* -> squeezed_string* */
+/* convert a string into a squeezed_string */
+squeezed_string* squeeze(char* s);
+
+/* squeezed_string* -> char* */
+/* convert a squeezed_string into a string */
+char* unsqueeze(squeezed_string* ss);
+
+#endif /* _SS_H */
+===== ss.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 6 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include <ctype.h>
+#include "ss.h"
+
+
+void ss_write(squeezed_string* ss, unsigned int i, char c) {
+    // error if the ss array doesn't have an ith character encoded
+    if (i >= ss->clen) {
+        fprintf(stderr, "error: writing out of bounds\n");
+        exit(1);
+    }
+    c = toupper((int) c);   // dealing only with upper case
+    // error if c is not a space or a capital letter
+    if (c != ' ' && (c < 'A' || c > 'Z')) {
+        fprintf(stderr, "error: writing unknown char\n");
+        exit(1);
+    }
+    
+    // convert c to preliminary squeezed version
+    unsigned char squeezed_c;
+    if (c == ' ') {
+        squeezed_c = (unsigned char) (c - ' ');   // 000[00000]
+    } else {
+        squeezed_c = (unsigned char) (c - 64);    // 000[5-bit code]
+    }
+    // create a mask of 11111 for where the new 5-bit code will go
+    unsigned char mask = 31;    // 000[11111]
+    
+    // find element of array to start at and gap before the desired bit
+    int bit_to_start = i * 5;
+    int byte_to_start = bit_to_start / 8;
+    int front_gap = bit_to_start - byte_to_start*8;
+    
+    if (front_gap > 3) {
+        // use fancy shifting to deal with spacing between 2 bytes
+        unsigned char shifted_squeezed_c_1 = squeezed_c >> (front_gap-3);
+        unsigned char shifted_mask_1 = mask >> (front_gap-3);
+        unsigned char shifted_squeezed_c_2 = squeezed_c << (8-(front_gap-3));
+        unsigned char shifted_mask_2 = mask << (8-(front_gap-3));
+        // &~mask to clean, then | the new 5-bit code in (x2)
+        ss->array[byte_to_start] = (ss->array[byte_to_start] & ~shifted_mask_1)
+                                  | shifted_squeezed_c_1;
+        ss->array[byte_to_start+1] = (ss->array[byte_to_start+1] & ~shifted_mask_2)
+                                    | shifted_squeezed_c_2;
+    } else {
+        // use shifting to deal with spacing
+        unsigned char shifted_squeezed_c = squeezed_c << (3-front_gap);
+        unsigned char shifted_mask = mask << (3-front_gap);
+        // &~mask to clean, then | the new 5-bit code in
+        ss->array[byte_to_start] = (ss->array[byte_to_start] & ~shifted_mask)
+                                   | shifted_squeezed_c;
+    }
+    
+    return;
+}
+
+char ss_read(squeezed_string* ss, unsigned int i) {
+    // error if the ss array doesn't have an ith character encoded
+    if (i >= ss->clen) {
+        fprintf(stderr, "error: reading out of bounds\n");
+        exit(1);
+    }
+    
+    int bit_to_start = i * 5;
+    int byte_to_start = bit_to_start / 8;
+    int amount_to_shift = bit_to_start - byte_to_start*8;
+    
+    unsigned char bit_code;
+    unsigned char first_byte_part;
+    if (amount_to_shift > 3) {
+        // clear out all except desired numbers and then set them to right spot
+        // by shifting back and forth
+        first_byte_part = ss->array[byte_to_start] << amount_to_shift;
+        first_byte_part = first_byte_part >> 3;
+        // addition works to combine the two parts taken from the bytes
+        bit_code = first_byte_part \
+                   + (ss->array[byte_to_start+1] >> ((8-amount_to_shift)+3));
+    } else {
+        bit_code = ss->array[byte_to_start] << amount_to_shift;
+        bit_code = bit_code >> 3;
+    }
+    
+    unsigned char letter_out;
+    if (bit_code == 0) {
+        letter_out = ' ';
+    } else {
+        letter_out = (unsigned char) (bit_code + 64);
+    }
+    
+    return letter_out;
+}
+
+squeezed_string* squeeze(char* s) {
+    squeezed_string* ss_out = malloc(sizeof(squeezed_string));
+    unsigned int bytes_needed = ceil((double) (strlen(s) * 5) / 8);
+    ss_out->array = malloc(bytes_needed * sizeof(unsigned char));
+    int i_init;
+    for (i_init = 0; i_init < bytes_needed; i_init++) {
+        ss_out->array[i_init] = 0;
+    }
+    ss_out->alen = bytes_needed;
+    ss_out->clen = strlen(s);
+    
+    int i;
+    for (i = 0; s[i] != '\0'; i++) {
+        ss_write(ss_out, i, s[i]);
+    }
+    
+    return ss_out;
+}
+
+char* unsqueeze(squeezed_string* ss) {
+    char* s_out = malloc((ss->clen+1) * sizeof(char));
+    
+    int i;
+    for (i = 0; i < ss->clen; i++) {
+        s_out[i] = ss_read(ss, i);
+    }
+    s_out[i] = '\0';
+    
+    return s_out;
+}
+===== matrix.h =====
+
+#ifndef _MATRIX_H
+#define _MATRIX_H
+
+typedef struct matrix matrix;
+struct matrix {
+    unsigned int n_rows;
+    unsigned int n_cols;
+    float **entries;
+};
+
+/* matrix_zero : int, int -> matrix*    */
+/* - build a matrix of given dimension, */
+/*   all entries 0.0                    */
+matrix *matrix_zero(int n_rows, int n_cols);
+
+/* matrix_read : matrix*, unsigned int, unsigned int -> float      */
+/* - read the item at row i, column j            */
+/* - error if row, column are outside the matrix */
+float matrix_read(matrix *m, unsigned int i, unsigned int j);
+
+/* matrix_write : matrix*, unsigned int, unsigned int, float -> [void] */
+/* - write the float values to the location          */
+/* - error if row, column are outside the matrix     */
+void matrix_write(matrix *m, unsigned int i, unsigned int j, float x);
+
+/* matrix_add : matrix*, matrix* -> matrix* */
+/* - add two matrices non-destructively     */
+/*   (i.e., construct a new matrix)         */
+/* - error if matrices' dimensions differ   */
+matrix *matrix_add(matrix *m, matrix *n);
+
+/* matrix_mult : matrix*, matrix* -> matrix*                  */
+/* - multiply two matrices, constructing a new matrix         */
+/* - error if dimensions don't allow matrix multiplication    */
+/* - note: this is matrix multiplication, not pairwise product */
+matrix *matrix_mult(matrix *m, matrix *n);
+
+/* matrix_show : matrix* -> [void] */
+void matrix_show(matrix *m);
+
+/* matrix_free : matrix* -> [void] */
+void matrix_free(matrix *m);
+
+#endif /* _MATRIX_H */
+===== matrix.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 6 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include "matrix.h"
+
+
+matrix* matrix_zero(int n_rows, int n_cols) {
+    // allocating the matrix while filling it with zeroes
+    matrix* mat_out = malloc(sizeof(matrix));
+    mat_out->n_rows = n_rows;
+    mat_out->n_cols = n_cols;
+    
+    int i_row, i_col;
+    mat_out->entries = malloc(n_rows * sizeof(float*));
+    for (i_row = 0; i_row < n_rows; i_row++) {
+        mat_out->entries[i_row] = malloc(n_cols * sizeof(float));
+        for (i_col = 0; i_col < n_cols; i_col++) {
+            mat_out->entries[i_row][i_col] = 0.0;
+        }
+    }
+    
+    return mat_out;
+}
+
+float matrix_read(matrix* m, unsigned int i, unsigned int j) {
+    // error if i or j is out of bounds
+    if (i >= m->n_rows || j >= m->n_cols) {
+        fprintf(stderr, \
+            "error matrix_read: row or column is outside of matrix\n");
+        exit(1);
+    }
+    
+    return m->entries[i][j];
+}
+
+void matrix_write(matrix* m, unsigned int i, unsigned int j, float x) {
+    // error if i or j is out of bounds
+    if (i >= m->n_rows || j >= m->n_cols) {
+        fprintf(stderr, \
+            "error matrix_write: row or column is outside of matrix\n");
+        exit(1);
+    }
+    
+    m->entries[i][j] = x;
+    return;
+}
+
+matrix* matrix_add(matrix* m, matrix* n) {
+    // check dimensions
+    if (m->n_rows != n->n_rows || m->n_cols != n->n_cols) {
+        fprintf(stderr, "error matrix_add: differing dimensions\n");
+        exit(1);
+    }
+    
+    unsigned int n_rows = m->n_rows;
+    unsigned int n_cols = m->n_cols;
+    matrix* mat_out = matrix_zero(n_rows, n_cols);
+    
+    int i_row, i_col;
+    for (i_row = 0; i_row < n_rows; i_row++) {
+        for (i_col = 0; i_col < n_cols; i_col++) {
+            matrix_write(mat_out, i_row, i_col, \
+                matrix_read(m, i_row, i_col) + matrix_read(n, i_row, i_col));
+        }
+    }
+    
+    return mat_out;
+}
+
+matrix* matrix_mult(matrix* m, matrix* n) {
+    // check dimensions
+    if (m->n_cols != n->n_rows) {
+        fprintf(stderr, "error matrix_mult: dimensions issue\n");
+        exit(1);
+    }
+    
+    unsigned int n_rows = m->n_rows;
+    unsigned int n_cols = n->n_cols;
+    unsigned int inner_limit = m->n_cols;  // same as n->n_rows
+    matrix* mat_out = matrix_zero(n_rows, n_cols);
+    
+    int i_row, i_col, i_inner;
+    float acc;
+    for (i_row = 0; i_row < n_rows; i_row++) {
+        for (i_col = 0; i_col < n_cols; i_col++) {
+            acc = 0.0;
+            for (i_inner = 0; i_inner < inner_limit; i_inner++) {
+                acc += matrix_read(m, i_row, i_inner) \
+                       * matrix_read(n, i_inner, i_col);
+            }
+            matrix_write(mat_out, i_row, i_col, acc);
+        }
+    }
+    
+    return mat_out;
+}
+
+void matrix_show(matrix* m) {
+    int i_row, i_col;
+    for (i_row = 0; i_row < m->n_rows; i_row++) {
+        for (i_col = 0; i_col < m->n_cols; i_col++) {
+            printf("%f ", matrix_read(m, i_row, i_col));
+        }
+        printf("\n");
+    }
+    return;
+}
+
+void matrix_free(matrix* m) {
+    int i_row;
+    for (i_row = 0; i_row < m->n_rows; i_row++) {
+        free(m->entries[i_row]);
+    }
+    free(m->entries);
+    free(m);
+    return;
+}
+===== sll.h =====
+
+#ifndef _SLL_H
+#define _SLL_H
+
+/* linked lists of strings */
+
+typedef struct sll sll;
+struct sll {
+  char *s;
+  sll *next;
+};
+
+/* By convention, the empty list is NULL. */
+
+/* sll_cons : (char*, sll*) -> sll* */
+/* build new list with given string at the head */
+/* note: copy the given string to the list (deep copy) */
+sll *sll_cons(char *s, sll *ss);
+
+/* sll_length : sll* -> int */
+/* return the number of strings in the given list */
+unsigned int sll_length(sll *ss);
+
+/* sll_member : (char*, sll*) -> int */
+/* test membership of given string in given list */
+/* use strcmp to compare strings */
+int sll_member(char *s, sll *ss);
+
+/* sll_show : sll* -> <void> */
+/* print a representation of the linked list to stdout */
+void sll_show(sll *ss);
+
+/* sll_free : sll* -> <void> */
+/* free all strings pointed to as well */
+void sll_free(sll *ss);
+
+#endif /* _SLL_H */
+===== sll.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 6 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "sll.h"
+
+
+sll* sll_cons(char* s, sll* ss) {
+    sll* head_new = malloc(sizeof(sll));
+    head_new->s = strdup(s);
+    head_new->next = ss;
+    return head_new;
+}
+
+unsigned int sll_length(sll* ss) {
+    unsigned int acc = 0;
+    while (ss != NULL) {
+        acc++;
+        ss = ss->next;
+    }
+    return acc;
+}
+
+int sll_member(char* s, sll* ss) {
+    while (ss != NULL) {
+        if (strcmp(ss->s, s) == 0) {
+            return 1;
+        }
+        ss = ss->next;
+    }
+    return 0;
+}
+
+void sll_show(sll* ss) {
+    while (ss != NULL) {
+        printf("%s | ", ss->s);
+        ss = ss->next;
+    }
+    return;
+}
+
+void sll_free(sll* ss) {
+    // case of empty list, don't need to free links
+    if (ss == NULL) {
+        return;
+    }
+    
+    // follow the links to the end, then start freeing
+    if (ss->next != NULL) {
+        sll_free(ss->next);
+    }
+    free(ss);
+    
+    return;
+}
+===== htbl.h =====
+
+#ifndef _HTBL_H
+#define _HTBL_H
+
+#include "sll.h"
+
+/* hash table of strings, with linked list buckets */
+
+struct hash_table {
+  unsigned long int(*hash)(char *);
+  unsigned int n_buckets;
+  sll **buckets; /* an array of pointers to string lists */
+};
+typedef struct hash_table htbl;
+
+/* good_hash : char -> unsigned int */
+/* compute hash code for given string */
+/* see web page for algorithm */
+unsigned long int good_hash(char *s);
+
+/* bad_hash : char -> unsigned int */
+/* implement this however you like, as long as it's bad */
+unsigned long int bad_hash(char *s);
+
+/* ht_new : (string -> unsigned long) int -> htbl* */
+/* allocate space for a new hash table of given size */
+/* all buckets must initially contain the empty list */
+htbl *ht_new(unsigned long int(*h)(char*), unsigned int sz);
+
+/* ht_n_entries : htbl* -> unsigned int */
+/* return the total number of entries in all buckets */
+unsigned int ht_n_entries(htbl *t);
+
+/* ht_load_factor : htbl* -> float */
+/* The load factor is the mean number of elements per bucket. */
+double ht_load_factor(htbl *t);
+
+/* ht_max_bucket : htbl* -> unsigned int */
+/* Report the number of items in the fullest bucket. */
+/* (Ideally, the max bucket has 1 item in it.) */
+unsigned int ht_max_bucket(htbl *t);
+
+/* ht_ins : (char*, htbl*) -> int */ 
+/* add string s to hash table t */
+/* no special treatment for duplicates, just insert them again */
+/* return the number of strings in s's bucket after inserting it */
+unsigned int ht_ins(char *s, htbl *t);
+
+/* ht_ins_list : (string_list*, htbl*) -> int */ 
+/* add strings to hash table t */
+void ht_ins_list(sll *ss, htbl *t);
+
+/* ht_member : (char*, htbl*) -> int */
+/* test membership of given string in given table */
+int ht_member(char *s, htbl *t);
+
+/* ht_show : htbl* -> <void> */
+/* print a representation of the hash table to stdout */
+void ht_show(htbl *t);
+
+/* ht_free : htbl* -> <void> */
+void ht_free(htbl *t);
+
+/* ht_resize : htbl** -> <void> */
+void ht_resize(htbl** t);
+unsigned int is_prime(unsigned int number);
+unsigned int next_prime(unsigned int current);
+unsigned int previous_prime(unsigned int current);
+
+#endif /* _HTBL_H */
+===== htbl.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 6 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+#include "htbl.h"
+
+
+unsigned long int good_hash(char* s) {
+    unsigned long int res = 17;
+    int i;
+    for (i = 0; s[i] != '\0'; i++) {
+        res = 37*res + s[i];
+    }
+    return res;
+}
+
+unsigned long int bad_hash(char* s) {
+    unsigned long int res = 0;
+    int i;
+    for (i = 0; s[i] != '\0'; i++) {
+        res += s[i];
+    }
+    return res;
+}
+
+htbl* ht_new(unsigned long int (*h)(char*), unsigned int sz) {
+    htbl* htbl_out = malloc(sizeof(htbl));
+    htbl_out->buckets = malloc(sz * sizeof(sll*));
+    unsigned int i;
+    for (i = 0; i < sz; i++) {
+        htbl_out->buckets[i] = NULL;
+    }
+    htbl_out->hash = h;
+    htbl_out->n_buckets = sz;
+    return htbl_out;
+}
+
+unsigned int ht_n_entries(htbl* t) {
+    unsigned int acc = 0;
+    
+    unsigned int i;
+    for (i = 0; i < t->n_buckets; i++) {
+        acc += sll_length(t->buckets[i]);
+    }
+    
+    return acc;
+}
+
+double ht_load_factor(htbl* t) {
+    return (double) ht_n_entries(t) / t->n_buckets;
+}
+
+unsigned int ht_max_bucket(htbl* t) {
+    unsigned int curr_max = 0;   // initialize max
+    
+    unsigned int temp_list_length;
+    unsigned int i;
+    for (i = 0; i < t->n_buckets; i++) {
+        temp_list_length = sll_length(t->buckets[i]);
+        if (temp_list_length > curr_max) {
+            curr_max = temp_list_length;
+        }
+    }
+    
+    return curr_max;
+}
+
+unsigned int ht_ins(char* s, htbl* t) {
+    unsigned int chosen_bucket = (*(t->hash))(s) % t->n_buckets;
+    t->buckets[chosen_bucket] = sll_cons(s, t->buckets[chosen_bucket]);
+    return sll_length(t->buckets[chosen_bucket]);
+}
+
+void ht_ins_list(sll* ss, htbl* t) {
+    while (ss != NULL) {
+        ht_ins(ss->s, t);
+        ss = ss->next;
+    }
+    return;
+}
+
+int ht_member(char* s, htbl* t) {
+    unsigned int chosen_bucket = (*(t->hash))(s) % t->n_buckets;
+    return sll_member(s, t->buckets[chosen_bucket]);
+}
+
+void ht_show(htbl* t) {
+    unsigned int i;
+    for (i = 0; i < t->n_buckets; i++) {
+        printf("%u: ", i);
+        sll_show(t->buckets[i]);
+        printf("\n\n");
+    }
+    return;
+}
+
+void ht_free(htbl* t) {
+    unsigned int i;
+    for (i = 0; i < t->n_buckets; i++) {
+        sll_free(t->buckets[i]);
+    }
+    free(t->buckets);
+    free(t);
+    return;
+}
+
+unsigned int is_prime(unsigned int number) {
+    unsigned int i;
+    unsigned int stopping_point = sqrt(number);
+    for (i = 2; i <= stopping_point; i++) {
+        if (number % i == 0) {
+            return 0;
+        }
+    }
+    return 1;
+}
+
+unsigned int next_prime(unsigned int current) {
+    unsigned int next = current + 1;
+    if (is_prime(next)) {
+        return next;
+    } else {
+        return next_prime(next);
+    }
+}
+
+unsigned int previous_prime(unsigned int current) {
+    unsigned int previous = current - 1;
+    if (is_prime(previous)) {
+        return previous;
+    } else {
+        return previous_prime(previous);
+    }
+}
+
+void ht_resize(htbl** t) {
+    // short-circuit if conditions are already good
+    double load_factor = ht_load_factor(*t);
+    if (load_factor == 0 || (load_factor >= 0.8 && load_factor <= 1.2)) {
+        return;
+    }
+    
+    // resize
+    unsigned int new_n_buckets;
+    if (load_factor > 1.2) {
+        new_n_buckets = next_prime(floor(ht_n_entries(*t)/1.2));
+    } else if (load_factor < 0.8) {
+        new_n_buckets = previous_prime(ceil(ht_n_entries(*t)/0.8));
+    }
+    
+    htbl* ht_resized = ht_new((*t)->hash, new_n_buckets);
+    unsigned int i;
+    for (i = 0; i < (*t)->n_buckets; i++) {
+        ht_ins_list((*t)->buckets[i], ht_resized);
+    }
+    
+    ht_free(*t);
+    *t = ht_resized;
+    return;
+}
+===== hw6_evidence.c =====
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Homework 6 */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "ss.h"
+#include "sll.h"
+#include "htbl.h"
+#include "matrix.h"
+
+
+void squeeze_evidence(void) {
+    printf("***testing squeeze\n");
+    squeezed_string* ss_1 = squeeze("TEST");
+    char first_letter = ss_read(ss_1, 0);
+    char second_letter = ss_read(ss_1, 1);
+    char third_letter = ss_read(ss_1, 2);
+    char fourth_letter = ss_read(ss_1, 3);
+    printf("first letter - expecting T: %c\n", first_letter);
+    printf("second letter - expecting E: %c\n", second_letter);
+    printf("third letter - expecting S: %c\n", third_letter);
+    printf("fourth letter - expecting T: %c\n", fourth_letter);
+    free(ss_1);
+    return;
+}
+
+void unsqueeze_evidence(void) {
+    printf("***testing unsqueeze\n");
+    squeezed_string* ss_1 = squeeze("test TEST test");
+    squeezed_string* ss_2 = squeeze("abc");
+    char* string_1 = unsqueeze(ss_1);
+    char* string_2 = unsqueeze(ss_2);
+    printf("reconstructed string - expecting TEST TEST TEST: %s\n", string_1);
+    printf("reconstructed string - expecting ABC: %s\n", string_2);
+    free(ss_1);
+    free(ss_2);
+    free(string_1);
+    free(string_2);
+    return;
+}
+
+char* alloc_str(int sz) {
+    char* s = malloc(sz);
+    if (s == NULL) {
+        fprintf(stderr,"alloc_str: malloc failed\n");
+        exit(1);
+    }
+    int i;
+    for (i = 0; i < sz; i++) {
+        s[i] = '\0';
+    }
+    return s;
+}
+
+char* trim_newline(char* s) {
+    char* t;
+    int n = strlen(s);
+    int must_change = (s[n-1] == '\n');
+    if (must_change) {
+        s[n-1] = '\0';
+    }
+    t = strdup(s);
+    if (must_change) {
+        s[n-1] = '\n';
+    }
+    return t;
+}
+
+void ht_resize_evidence(void) {
+    printf("***testing ht_resize along with the old htbl stuff\n");
+    htbl* t = ht_new(&good_hash, 10);
+    
+    FILE* cnets2015 = fopen("cnets2015", "r");
+    while (!feof(cnets2015)) {
+        char* s = alloc_str(256);
+        char* l;
+        fgets(s, 256, cnets2015);
+        l = trim_newline(s);
+        free(s);
+        if (strlen(l) > 0) {
+            ht_ins(l, t);
+        }
+        free(l);
+    }
+    fclose(cnets2015);
+    
+    ht_show(t);
+    printf("The hash table has %i buckets with %i entries (load factor %lg).\n",
+        t->n_buckets, 
+        ht_n_entries(t),
+        ht_load_factor(t));
+    printf("\nThe bucket with the most items in it contains %d items.\n",
+        ht_max_bucket(t));
+    printf("\nht_member:\n");
+    printf("membership of cnet \"aardvark\" : %i\n", ht_member("aardvark",t));
+    printf("membership of cnet \"borja\"    : %i\n", ht_member("borja",t));
+    
+    printf("\n**now resizing**\n");
+    htbl** pointer_to_t = malloc(sizeof(htbl*));
+    pointer_to_t = &t;
+    ht_resize(pointer_to_t);
+    printf("**resizing complete**\n\n");
+    
+    // testing the whole shebang to make sure the hashtable still works
+    ht_show(t);
+    printf("The hash table has %i buckets with %i entries (load factor %lg).\n",
+        t->n_buckets, 
+        ht_n_entries(t),
+        ht_load_factor(t));
+    printf("\nThe bucket with the most items in it contains %d items.\n",
+        ht_max_bucket(t));
+    printf("\nht_member:\n");
+    printf("membership of cnet \"aardvark\" : %i\n", ht_member("aardvark",t));
+    printf("membership of cnet \"borja\"    : %i\n", ht_member("borja",t));
+    
+    ht_free(t);
+    return;
+}
+
+void matrix_zero_evidence(void) {
+    printf("***testing matrix_zero\n");
+    matrix* m = matrix_zero(3, 5);
+    printf("3x5 zero matrix:\n");
+    matrix_show(m);
+    matrix_free(m);
+    return;
+}
+
+void matrix_read_write_evidence(void) {
+    printf("***testing matrix_read and matrix_write\n");
+    matrix* m = matrix_zero(5, 5);
+    printf("5x5 zero matrix\n");
+    matrix_show(m);
+    printf("%f is the value at %u, %u in the matrix\n", matrix_read(m, 3, 4), 3, 4);
+    matrix_write(m, 3, 4, 2.4);
+    printf("5x5 zero matrix with something written\n");
+    matrix_show(m);
+    printf("%f is now the value at %u, %u in the matrix\n", matrix_read(m, 3, 4), 3, 4);
+    matrix_free(m);
+    return;
+}
+
+void matrix_add_evidence(void) {
+    printf("***testing matrix_add\n");
+    matrix* m = matrix_zero(2, 1);
+    matrix* n = matrix_zero(2, 1);
+    matrix_write(m, 0, 0, 1.6);
+    matrix_write(m, 1, 0, 0.8);
+    matrix_write(n, 0, 0, -1.5);
+    matrix_write(n, 1, 0, -0.9);
+    printf("matrix m:\n");
+    matrix_show(m);
+    printf("matrix n:\n");
+    matrix_show(n);
+    matrix* sum = matrix_add(m, n);
+    printf("sum matrix:\n");
+    matrix_show(sum);
+    matrix_free(m);
+    matrix_free(n);
+    matrix_free(sum);
+    return;
+}
+
+void matrix_mult_evidence(void) {
+    printf("***testing matrix_mult\n");
+    matrix* m = matrix_zero(2, 1);
+    matrix* n = matrix_zero(1, 2);
+    matrix_write(m, 0, 0, 1.0);
+    matrix_write(m, 1, 0, 2.0);
+    matrix_write(n, 0, 0, 3.0);
+    matrix_write(n, 0, 1, 4.0);
+    printf("matrix m:\n");
+    matrix_show(m);
+    printf("matrix n:\n");
+    matrix_show(n);
+    matrix* product = matrix_mult(m, n);
+    printf("product matrix:\n");
+    matrix_show(product);
+    matrix_free(m);
+    matrix_free(n);
+    matrix_free(product);
+    return;
+}
+
+/*****************************************************************************/
+
+int main() {
+    squeeze_evidence();
+    printf("\n");
+    unsqueeze_evidence();
+    printf("\n");
+    ht_resize_evidence();
+    printf("\n");
+    matrix_zero_evidence();
+    printf("\n");
+    matrix_read_write_evidence();
+    printf("\n");
+    matrix_add_evidence();
+    printf("\n");
+    matrix_mult_evidence();
+    return 0;
+}
+===== Makefile =====
+
+all: hw6_evidence
+
+hw6_evidence: ss.c sll.c htbl.c matrix.c hw6_evidence.c
+	gcc -Wall -g -o hw6_evidence ss.c sll.c htbl.c matrix.c hw6_evidence.c
+
+clean:
+	rm -f *~ *.stackdump hw6_evidence
+
+
+
+/* ====== evaluation ====== */
+
+/* === correctness === */
+
+/* problem 1 (ss_read)                 4/ 4 */
+/* problem 1 (ss_write)                4/ 4 */
+/* problem 1 (squeeze)                 4/ 4 */
+/* problem 1 (unsqueeze)               3/ 3 */
+
+/* problem 2 (ht_resize)               8/ 8 */
+
+/* problem 3 (matrix_zero)             2/ 2 */
+/* problem 3 (matrix_read)             2/ 2 */
+/* problem 3 (matrix_write)            2/ 2 */
+/* problem 3 (matrix_add)              3/ 3 */
+/* problem 3 (matrix_mult)             5/ 5 */
+/* problem 3 (matrix_show)             3/ 3 */
+/* problem 3 (matrix_free)             2/ 2 */
+
+/* === style === */
+
+/* code layout                         6/ 6 */
+/* identifiers are well named          6/ 6 */
+/* well-written purposes               4/ 4 */
+/* prototypes with appropriate types   4/ 4 */
+
+/* functions are well designed         6/ 6 */
+/* code is well factored               6/ 6 */
+
+/* code is written clearly             8/ 8 */
+/* code is efficient                   6/ 6 */
+
+/* adequate tests                      8/ 8 */
+/* svn used correctly                  4/ 4 */
+
+/* _total-score_                      100/100 */
+
+/* graded by Alice Zhang */

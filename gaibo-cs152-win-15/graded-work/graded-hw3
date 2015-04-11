@@ -1,0 +1,36 @@
+/* ====== evaluation ====== */
+
+/* GRADER'S NOTE: Be wary of adding extra behavior than that which was
+   specified to your command line tools- being able to return the exact
+   behavior specified is important to a large variety of programming and
+   applications. (-2 points from first occurrence in sum). -Marc Kealhofer */
+
+/* === correctness === */
+
+/* problem 1 (sum)                    1/ 3 */
+/* problem 1 (squares)                3/ 3 */
+/* problem 1 (positives)              4/ 4 */
+/* problem 1 (millionaire)            4/ 4 */
+
+/* problem 2 (str_to_int)            14/14 */
+/* problem 3 (find_replace)          14/14 */
+
+/* === style === */
+
+/* code layout                        6/ 6 */
+/* identifiers are well named         6/ 6 */
+/* well-written purposes              4/ 4 */
+/* prototypes with appropriate types  4/ 4 */
+
+/* functions are well designed        6/ 6 */
+/* code is well factored              6/ 6 */
+
+/* code is written clearly            8/ 8 */
+/* code is efficient                  6/ 6 */
+
+/* adequate tests                     8/ 8 */
+/* svn used correctly                 4/ 4 */
+
+/* _total-score_                    98/100 */
+
+/* graded by Marc Kealhofer */

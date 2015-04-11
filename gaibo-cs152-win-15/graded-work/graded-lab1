@@ -1,0 +1,162 @@
+/* ====== Makefile ====== */
+
+# Gaibo Zhang, gaibo
+# CS152, Winter 2015
+# Lab 1
+
+evidence:
+	gcc -Wall -o evidence_expt expt.c evidence_expt.c
+
+raise:
+	gcc -Wall -o raise expt.c raise.c
+/* ====== expt.h ====== */
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Lab 1 */
+
+/* expt : int [unsigned int] -> [long int] */
+/* linear time recursive exponentiation */
+long int expt(int a, unsigned int n);
+
+/* ss : int [unsigned int] -> [long int] */
+/* exponentiation by successive squaring */
+long int ss(int a, unsigned int n);
+
+/* ssm : int [unsigned int] [unsigned int] -> int */
+/* exponentiation modulo m by successive squaring */
+int ssm(int a, unsigned int n, unsigned int m);
+/* ====== expt.c ====== */
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Lab 1 */
+
+#include "expt.h"
+
+/* exponentiation by recursion */
+long int expt(int a, unsigned int n) {
+    if (n == 0) {
+        return 1;
+    }
+    return a * expt(a, (n-1));
+}
+
+/* fast exponentiation by successive squaring */
+long int ss(int a, unsigned int n) {
+    if (n == 0) {
+        return 1;
+    } else if (n%2) {   // odd case
+        return a * ss(a, (n-1));
+    } else {    // even case
+        return ss(a, (n/2)) * ss(a, (n/2)); /* grader: call ss twice with the same parameters. */
+    }
+}
+
+/* fast exponentiation modulo m */
+int ssm(int a, unsigned int n, unsigned int m) {
+    if (n == 0) {
+        return 1;
+    } else if (n%2) {   // odd case
+        return a * ssm(a, (n-1), m) % m;
+    } else {    // even case
+        return ssm(a,(n/2), m) * ssm(a, (n/2), m) % m; /* garder: the same as above. Call once and store the value, then save one function call. */
+    }
+}
+/* ====== evidence_expt.c ====== */
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Lab 1 */
+
+#include <stdio.h>
+#include "expt.h"
+
+void evidence_expt()
+{
+  printf("*** testing expt\n");
+  printf("- expecting 1: %ld\n", expt(2,0));
+  printf("- expecting 8: %ld\n", expt(2,3));
+  printf("- expecting 2: %ld\n", expt(2,1));
+  printf("- expecting 27: %ld\n", expt(3,3));
+  printf("- expecting 243: %ld\n", expt(3,5));
+  printf("- expecting 16: %ld\n", expt(2,4));
+}
+
+void evidence_ss()
+{
+  printf("*** testing ss\n");
+  printf("- expecting 1: %ld\n", ss(2,0));
+  printf("- expecting 8: %ld\n", ss(2,3));
+  printf("- expecting 2: %ld\n", ss(2,1));
+  printf("- expecting 27: %ld\n", ss(3,3));
+  printf("- expecting 243: %ld\n", ss(3,5));
+  printf("- expecting 16: %ld\n", ss(2,4));
+}
+
+void evidence_ssm()
+{
+  printf("*** testing ssm\n");
+  printf("- expecting 24: %d\n", ssm(2, 10, 1000));
+  printf("- expecting 4: %d\n", ssm(2, 10, 10));
+  printf("- expecting 6: %d\n", ssm(2, 100, 10));
+  printf("- expecting 6: %d\n", ssm(2, 1000, 10));
+  printf("- expecting 8: %d\n", ssm(2, 3, 10));
+  printf("- expecting 0: %d\n", ssm(2, 1000, 2));
+  printf("- expecting 3: %d\n", ssm(3, 3, 4));
+  printf("- expecting 1: %d\n", ssm(3, 4, 2));
+  printf("- expecting 43: %d\n", ssm(3, 5, 200));
+}
+
+int main(int argc, char *argv[])
+{
+  evidence_expt();
+  evidence_ss();
+  evidence_ssm();
+  return 0;
+}
+/* ====== raise.c ====== */
+
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2015 */
+/* Lab 1 */
+
+#include <stdlib.h>
+#include <stdio.h>
+#include "expt.h"
+
+int main(int argc, char *argv[])
+{
+    int a = atoi(argv[1]);          /* reads 1st command line argument */
+    unsigned int n = atoi(argv[2]); /* reads 2nd command line argument */
+    printf("%ld\n",ss(a,n));
+    return 0;
+}
+/* ====== evaluation ======  */
+
+/* === correctness === */
+
+/* Makefile :                           5/ 5 */
+/* expt.h   :                           5/ 5 */
+
+/* expt.c   :                           13/13 */
+/* evidence_expt.c :                    13/13 */
+/* raise.c :                            12/12 */
+
+/* === style === */
+
+/* code layout                         8/ 8 */
+/* identifiers are well named          6/ 6 */
+
+/* functions are well designed         6/ 6 */
+/* code is well factored               3/ 6 */
+
+/* code is written clearly             8/ 8 */
+/* code is efficient                   6/ 6 */
+
+/* adequate tests                      8/ 8 */
+/* svn used correctly                  4/ 4 */
+
+/* _total-score_                      97/100 */
+
+/* graded by Haopeng Liu*/

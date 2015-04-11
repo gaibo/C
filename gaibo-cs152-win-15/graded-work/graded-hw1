@@ -1,0 +1,219 @@
+/* Gaibo Zhang, gaibo */
+/* CS152, Winter 2014 */
+/* Homework 1 */
+
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <math.h>
+
+
+/** Function Prototypes **/
+
+/* function: find the greatest common divisor of two natural numbers */
+unsigned int gcd(unsigned int a, unsigned int b);
+
+/* function: find the surface area of a sphere given the radius */
+double area_sphere(double radius);
+
+/* function: determine the early termination fee given a number of days */
+int early_term_fee(int days);
+
+/* helper function: given a phone number and a position, return the digit */
+int dig_lookup(long long int number, int position);
+
+/* function: determine whether a number is a valid telephone number */
+int is_valid_tel_num(long long int number);
+
+/*
+int main() {
+    // gcd tests
+    printf("gcd test 1: gcd(123, 3). answer: 3. we get: %d\n", gcd(123, 3));
+    printf("gcd test 2: gcd(3, 123). answer: 3. we get: %d\n", gcd(3, 123));
+    printf("gcd test 3: gcd(123, 0). answer: 123. we get: %d\n", gcd(123, 0));
+    printf("gcd test 4: gcd(0, 44). answer: 44. we get: %d\n", gcd(0, 44));
+    // area_sphere tests
+    printf("area_sphere test 1: area_sphere(1). answer: 4pi, 12.566. " \
+        "we get: %lf\n", area_sphere(1));
+    printf("area_sphere test 2: area_sphere(2.6). answer: 84.949. " \
+        "we get: %lf\n", area_sphere(2.6));
+    // early_term_fee tests
+    printf("early_term_fee test 1: early_term_fee(10). answer: 0. " \
+        "we get: %d\n", early_term_fee(10));
+    printf("early_term_fee test 2: early_term_fee(14). answer: 0. " \
+        "we get: %d\n", early_term_fee(14));
+    printf("early_term_fee test 3: early_term_fee(29). answer: 325. " \
+        "we get: %d\n", early_term_fee(29));
+    printf("early_term_fee test 4: early_term_fee(719). answer: 95. " \
+        "we get: %d\n", early_term_fee(719));
+    // dig_lookup tests
+    printf("dig_lookup test 1: dig_lookup(7735550199, 1). answer: 7. " \
+        "we get: %d\n", dig_lookup(7735550199, 1));
+    printf("dig_lookup test 2: dig_lookup(7735550199, 2). answer: 7. " \
+        "we get: %d\n", dig_lookup(7735550199, 2));
+    printf("dig_lookup test 3: dig_lookup(7735550199, 3). answer: 3. " \
+        "we get: %d\n", dig_lookup(7735550199, 3));
+    printf("dig_lookup test 4: dig_lookup(7735550199, 10). answer: 9. " \
+        "we get: %d\n", dig_lookup(7735550199, 10));
+    // is_valid_tel_num tests
+    printf("is_valid_tel_num test 1: is_valid_tel_num(7035550199). answer: 1. " \
+        "we get: %d\n", is_valid_tel_num(7035550199));
+    printf("is_valid_tel_num test 2: is_valid_tel_num(1000000000). answer: 0. " \
+        "we get: %d\n", is_valid_tel_num(1000000000));
+    printf("is_valid_tel_num test 3: is_valid_tel_num(10000000000). answer: 0. " \ 
+        "we get: %d\n", is_valid_tel_num(10000000000));
+    printf("is_valid_tel_num test 4: is_valid_tel_num(1). answer: 0. " \
+        "we get: %d\n", is_valid_tel_num(1));
+    printf("is_valid_tel_num test 5: is_valid_tel_num(9199999999). answer: 1. " \
+        "we get: %d\n", is_valid_tel_num(9199999999));
+    printf("is_valid_tel_num test 6: is_valid_tel_num(1199999999). answer: 0. " \
+        "we get: %d\n", is_valid_tel_num(1199999999));
+    printf("is_valid_tel_num test 7: is_valid_tel_num(9299999999). answer: 0. " \
+        "we get: %d\n", is_valid_tel_num(9299999999));
+    printf("is_valid_tel_num test 8: is_valid_tel_num(9191999999). answer: 0. " \
+        "we get: %d\n", is_valid_tel_num(9191999999));
+    printf("is_valid_tel_num test 9: is_valid_tel_num(9199199999). answer: 0. " \
+        "we get: %d\n", is_valid_tel_num(9199199999));
+} //#grader: please make sure to terminate your main() function with return 0;
+*/
+
+/** Function Definitions **/
+
+unsigned int gcd(unsigned int a, unsigned int b) {
+    // swap number order if necessary so that the first is greater (or equal)
+    if (a < b) {
+		return gcd(b, a);
+    }
+    // execute Euler's algorithm on loop
+    if (b == 0) {
+        return a;
+    } else {
+        return gcd(b, a%b);
+	}
+}
+
+double area_sphere(double radius) {
+    return 4 * M_PI * (radius*radius);
+}
+
+int early_term_fee(int days) {
+    if ((days <= 14) || (days >= 720)) {
+        return 0;
+    } else {
+        return 325 - (10 * (days/30));
+    }
+}
+
+int dig_lookup(long long int number, int position) {
+    // algorithm that uses modulus and rounding to return the desired digit
+    return (number % (long long int) pow(10, 11 - position)) / (long long int) pow(10, 10 - position);
+}//#grader: lines over 80 chars. -1 layout
+
+int is_valid_tel_num(long long int number) {
+    // first check to make sure there is the right number of digits: 10
+    // as an integer, that would be order of magnitude of 10^9
+    if ((number < pow(10, 9)) || (number >= pow(10, 10))) {
+        return 0; //#grader: inefficient; should just say 10E9 and 10E10. -1
+    }
+    
+    // assign the digits to check
+    int first_dig_area = dig_lookup(number, 1);
+    int second_dig_area = dig_lookup(number, 2);
+    int first_dig_ex = dig_lookup(number, 4);
+    int second_dig_ex = dig_lookup(number, 5);
+    
+    // restrictions to check
+    if ((first_dig_area < 2) || (first_dig_area > 9) ||
+        ((second_dig_area != 0) && (second_dig_area != 1)) ||
+        (first_dig_ex < 2) || (first_dig_ex > 9) ||
+        (second_dig_ex < 2) || (second_dig_ex > 9)) {
+            return 0;
+        } else {
+            return 1;
+        }
+}
+/* === GRADER'S TESTS === */
+
+int main(int argc, char *argv[]) {
+  printf("Tests for gcd()\n");
+  printf("M   N     EXPECTED  ACTUAL\n");
+  printf("%2d  %2d    %2d        %2d\n", 1, 1, 1, gcd(1, 1));
+  printf("%2d  %2d    %2d        %2d\n", 3, 4, 1, gcd(3, 4));
+  printf("%2d  %2d    %2d        %2d\n", 21, 7, 7, gcd(21, 7));
+  printf("%2d  %2d    %2d        %2d\n", 7, 21, 7, gcd(7, 21));
+  printf("%2d  %2d    %2d        %2d\n", 36, 12, 12, gcd(36, 12));
+  printf("%2d  %2d    %2d        %2d\n", 15, 25, 5, gcd(15, 25));
+  printf("\n\n");;
+
+  printf("Tests for area_sphere()\n");
+  printf("RADIUS     EXPECTED  ACTUAL\n");
+  printf("%6lf   %8.5lf  %8.5lf\n", 0.0, 0.0, area_sphere(0.0));
+  printf("%6lf   %8.5lf  %8.5lf\n", 1.0, 12.56637, area_sphere(1.0));
+  printf("%6lf   %8.5lf  %8.5lf\n", 1.5, 28.27433, area_sphere(1.5));
+  printf("%6lf   %8.5lf  %8.5lf\n", 2.0, 50.26548, area_sphere(2.0));
+  printf("\n\n");
+    
+  printf("Tests for early_term_fee()\n");
+  printf("DAYS  EXPECTED  ACTUAL\n");
+  printf("%3d   %3d       %3d\n", 0, 0, early_term_fee(0));
+  printf("%3d   %3d       %3d\n", 1, 0, early_term_fee(1));
+  printf("%3d   %3d       %3d\n", 14, 0, early_term_fee(14));
+  printf("%3d   %3d       %3d\n", 15, 325, early_term_fee(15));
+  printf("%3d   %3d       %3d\n", 29, 325, early_term_fee(29));
+  printf("%3d   %3d       %3d\n", 30, 315, early_term_fee(30));
+  printf("%3d   %3d       %3d\n", 31, 315, early_term_fee(31));
+  printf("%3d   %3d       %3d\n", 59, 315, early_term_fee(59));
+  printf("%3d   %3d       %3d\n", 60, 305, early_term_fee(60));
+  printf("%3d   %3d       %3d\n", 61, 305, early_term_fee(61));
+  printf("%3d   %3d       %3d\n", 719, 95, early_term_fee(719));
+  printf("%3d   %3d       %3d\n", 720, 0, early_term_fee(720));
+  printf("%3d   %3d       %3d\n", 721, 0, early_term_fee(721));
+  printf("\n\n");
+
+  printf("Tests for is_valid_tel_num()\n");
+  printf("TELNO        EXPECTED  ACTUAL\n");
+  printf("%11lld  %d         %d\n", 13125551212LL, 0, is_valid_tel_num(13125551212LL));
+  printf("%11lld  %d         %d\n", 3125551212LL, 1, is_valid_tel_num(3125551212LL));
+  printf("%11lld  %d         %d\n", 7735551212LL, 0, is_valid_tel_num(7735551212LL));
+  printf("%11lld  %d         %d\n", 1125551212LL, 0, is_valid_tel_num(1125551212LL));
+  printf("%11lld  %d         %d\n", 125551212LL, 0, is_valid_tel_num(125551212LL));
+  printf("%11lld  %d         %d\n", 3121551212LL, 0, is_valid_tel_num(3121551212LL));
+  printf("%11lld  %d         %d\n", 3125151212LL, 0, is_valid_tel_num(3125151212LL));
+
+  printf("\n");
+  return 0;
+}
+
+
+/* ====== evaluation ====== */
+
+/* === correctness === */
+
+/* problem 1 (gcd)                     16/16 */
+/* problem 2 (area_sphere)              8/ 8 */
+/* problem 3 (early_term_fee)          12/12 */
+/* problem 4 (is_valid_tel_num)        12/12 */
+
+/* === style === */
+
+/* code layout                          7/ 8 */ (lines over 80 chars)
+/* identifiers are well named           6/ 6 */
+
+/* functions are well designed          6/ 6 */
+/* -->n/a this week */
+/* code is well factored                6/ 6 */
+/* ie don't repeat blocks of code */
+
+/* code is written clearly              8/ 8 */
+/* ie avoid Byzantine logic */
+/* code is efficient                    5/ 6 */ (unnecessary pow [x2])
+/* ie avoid blatant inefficiencies */
+
+/* adequate tests                       8/ 8 */
+/* svn used correctly                   4/ 4 */
+
+/* _total-score_                       98/100 */
+
+/* #grader: Nice Job! */
+
+/* graded by Mark Maskeri */

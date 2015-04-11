@@ -1,0 +1,38 @@
+/* ====== evaluation ====== */
+
+/* GRADER'S NOTE: You MUST factor your code. analyze_weather could greatly
+   benefit from factoring. (-3 points). -Marc Kealhofer */
+
+/* GRADER'S NOTE: An EXCELLENT job. Be attune to the issue of helper functions
+   and factoring opportunities in the future. -MK */
+
+/* === correctness === */
+
+/* problem 1 (concat)                 6/ 6 */
+
+/* problem 2 (uint_to_binary)         6/ 6 */
+/* problem 2 (binary_to_uint)         6/ 6 */
+
+/* problem 3 (analyze_weather)       12/12 */
+
+/* problem 4 (mixture_weight)        12/12 */
+
+/* === style === */
+
+/* code layout                        6/ 6 */
+/* identifiers are well named         6/ 6 */
+/* well-written purposes              4/ 4 */
+/* prototypes with appropriate types  4/ 4 */
+
+/* functions are well designed        6/ 6 */
+/* code is well factored              3/ 6 */
+
+/* code is written clearly            8/ 8 */
+/* code is efficient                  6/ 6 */
+
+/* adequate tests                     8/ 8 */
+/* svn used correctly                 4/ 4 */
+
+/* _total-score_                    97/100 */
+
+/* graded by Marc Kealhofer */
