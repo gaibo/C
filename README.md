@@ -2,7 +2,7 @@
 C stuff
 
 gaibo-cs152-win-15
-	- work done for class
+  - work done for class
   
 [WIP] Huffman_coding_full_implementation_project
   - Huffman coding for compression of letters
